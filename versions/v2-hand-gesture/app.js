@@ -68,7 +68,7 @@ async function init() {
     pane.addInput(params, 'fontSize', {
         label: '字体大小',
         min: 1,
-        max: 20,
+        max: 5,
         step: 1
     });
 
