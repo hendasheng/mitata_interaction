@@ -69,7 +69,7 @@ async function init() {
         label: '字体大小',
         min: 1,
         max: 5,
-        step: 1
+        step: 0.1
     });
 
     pane.addInput(params, 'textColor', {
