@@ -34,9 +34,46 @@
 
 ## 快速开始
 
+### 运行项目
+
+由于浏览器安全限制，需要通过本地服务器运行才能访问摄像头。推荐以下方法：
+
+**方法 1：使用 VS Code Live Server 插件（推荐）**
+1. 安装 [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) 插件
+2. 在 VS Code 中打开项目文件夹
+3. 右键点击 `home.html` 或 `index.html`
+4. 选择 "Open with Live Server"
+5. 浏览器会自动打开项目
+
+**方法 2：使用 Python 内置服务器**
+```bash
+# Python 3
+python3 -m http.server 8000
+
+# Python 2
+python -m SimpleHTTPServer 8000
+```
+然后访问 `http://localhost:8000`
+
+**方法 3：使用 Node.js http-server**
+```bash
+# 安装
+npm install -g http-server
+
+# 运行
+http-server -p 8000
+```
+然后访问 `http://localhost:8000`
+
+**方法 4：使用 PHP 内置服务器**
+```bash
+php -S localhost:8000
+```
+然后访问 `http://localhost:8000`
+
 ### 使用说明
 
-1. 打开 `home.html` 选择版本，或直接打开 `index.html`
+1. 通过本地服务器打开 `home.html` 选择版本，或直接打开 `index.html`
 2. 点击"开始捕捉"按钮
 3. 允许浏览器访问摄像头
 4. 调整控制参数：
