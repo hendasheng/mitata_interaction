@@ -376,8 +376,8 @@ function drawEnlargedEyeRegion(image, landmarks) {
     const leftEyeCenterX = (leftEyeBounds.minX + leftEyeBounds.maxX) / 2;
     const rightEyeCenterX = (rightEyeBounds.minX + rightEyeBounds.maxX) / 2;
 
-    // 应用眼距调整（负值拉近）
-    const gapAdjustment = params.eyeGap / 2;
+    // 应用眼距调整（负值拉近，正值拉远）
+    const gapAdjustment = -params.eyeGap / 2;
 
     // 计算整体区域边界（应用眼距调整）
     const adjustedLeftMaxX = leftEyeBounds.maxX + gapAdjustment;
@@ -397,28 +397,40 @@ function drawEnlargedEyeRegion(image, landmarks) {
     const sourceWidth = Math.min(canvas.width - sourceX, eyeRegionBounds.maxX - eyeRegionBounds.minX + padding * 2);
     const sourceHeight = Math.min(canvas.height - sourceY, eyeRegionBounds.maxY - eyeRegionBounds.minY + padding * 2);
 
-    // 计算放大后的尺寸
-    const scaledWidth = sourceWidth * params.scale;
-    const scaledHeight = sourceHeight * params.scale;
+    // 用离屏 canvas 以原始尺寸绘制文本效果
+    const offscreen = document.createElement('canvas');
+    offscreen.width = sourceWidth;
+    offscreen.height = sourceHeight;
+    const offCtx = offscreen.getContext('2d');
 
-    // 设置 textCanvas 的尺寸
-    textCanvas.width = scaledWidth;
-    textCanvas.height = scaledHeight;
+    offCtx.fillStyle = '#000';
+    offCtx.fillRect(0, 0, sourceWidth, sourceHeight);
 
-    // 黑色背景
+    drawEyeWithTextScaled(offCtx, landmarks, LEFT_EYE_INDICES, LEFT_IRIS_INDICES,
+        canvas.width, canvas.height, 1, sourceX, sourceY, gapAdjustment);
+    drawEyeWithTextScaled(offCtx, landmarks, RIGHT_EYE_INDICES, RIGHT_IRIS_INDICES,
+        canvas.width, canvas.height, 1, sourceX, sourceY, -gapAdjustment);
+
+    // 将离屏 canvas 缩放绘制到 textCanvas
+    const displayW = document.querySelector('.text-display').clientWidth;
+    const displayH = document.querySelector('.text-display').clientHeight;
+    const aspect = sourceWidth / sourceHeight;
+    let drawW = displayW;
+    let drawH = displayW / aspect;
+    if (drawH > displayH) {
+        drawH = displayH;
+        drawW = displayH * aspect;
+    }
+
+    textCanvas.width = displayW;
+    textCanvas.height = displayH;
     textCtx.fillStyle = '#000';
-    textCtx.fillRect(0, 0, scaledWidth, scaledHeight);
+    textCtx.fillRect(0, 0, displayW, displayH);
 
-    // 在放大的画布上绘制文本填充效果（应用眼距调整）
-    const scaleRatio = params.scale;
-    const offsetX = sourceX;
-    const offsetY = sourceY;
-
-    drawEyeWithTextScaled(textCtx, landmarks, LEFT_EYE_INDICES, LEFT_IRIS_INDICES,
-        canvas.width, canvas.height, scaleRatio, offsetX, offsetY, gapAdjustment);
-
-    drawEyeWithTextScaled(textCtx, landmarks, RIGHT_EYE_INDICES, RIGHT_IRIS_INDICES,
-        canvas.width, canvas.height, scaleRatio, offsetX, offsetY, -gapAdjustment);
+    const drawX = (displayW - drawW) / 2;
+    const drawY = (displayH - drawH) / 2;
+    textCtx.imageSmoothingEnabled = false;
+    textCtx.drawImage(offscreen, drawX, drawY, drawW * params.scale / 10, drawH * params.scale / 10);
 }
 
 // 在缩放的画布上绘制眼睛文本填充
