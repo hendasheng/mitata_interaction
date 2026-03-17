@@ -397,40 +397,32 @@ function drawEnlargedEyeRegion(image, landmarks) {
     const sourceWidth = Math.min(canvas.width - sourceX, eyeRegionBounds.maxX - eyeRegionBounds.minX + padding * 2);
     const sourceHeight = Math.min(canvas.height - sourceY, eyeRegionBounds.maxY - eyeRegionBounds.minY + padding * 2);
 
-    // 用离屏 canvas 以原始尺寸绘制文本效果
-    const offscreen = document.createElement('canvas');
-    offscreen.width = sourceWidth;
-    offscreen.height = sourceHeight;
-    const offCtx = offscreen.getContext('2d');
+    // 计算放大后的尺寸，限制最大尺寸避免浏览器限制
+    const maxDim = 8192;
+    const rawScaledWidth = sourceWidth * params.scale;
+    const rawScaledHeight = sourceHeight * params.scale;
+    const clampRatio = Math.min(1, maxDim / Math.max(rawScaledWidth, rawScaledHeight));
+    const scaledWidth = rawScaledWidth * clampRatio;
+    const scaledHeight = rawScaledHeight * clampRatio;
+    const effectiveScale = params.scale * clampRatio;
 
-    offCtx.fillStyle = '#000';
-    offCtx.fillRect(0, 0, sourceWidth, sourceHeight);
+    // 设置 textCanvas 的尺寸
+    textCanvas.width = scaledWidth;
+    textCanvas.height = scaledHeight;
 
-    drawEyeWithTextScaled(offCtx, landmarks, LEFT_EYE_INDICES, LEFT_IRIS_INDICES,
-        canvas.width, canvas.height, 1, sourceX, sourceY, gapAdjustment);
-    drawEyeWithTextScaled(offCtx, landmarks, RIGHT_EYE_INDICES, RIGHT_IRIS_INDICES,
-        canvas.width, canvas.height, 1, sourceX, sourceY, -gapAdjustment);
-
-    // 将离屏 canvas 缩放绘制到 textCanvas
-    const displayW = document.querySelector('.text-display').clientWidth;
-    const displayH = document.querySelector('.text-display').clientHeight;
-    const aspect = sourceWidth / sourceHeight;
-    let drawW = displayW;
-    let drawH = displayW / aspect;
-    if (drawH > displayH) {
-        drawH = displayH;
-        drawW = displayH * aspect;
-    }
-
-    textCanvas.width = displayW;
-    textCanvas.height = displayH;
+    // 黑色背景
     textCtx.fillStyle = '#000';
-    textCtx.fillRect(0, 0, displayW, displayH);
+    textCtx.fillRect(0, 0, scaledWidth, scaledHeight);
 
-    const drawX = (displayW - drawW) / 2;
-    const drawY = (displayH - drawH) / 2;
-    textCtx.imageSmoothingEnabled = false;
-    textCtx.drawImage(offscreen, drawX, drawY, drawW * params.scale / 10, drawH * params.scale / 10);
+    // 在放大的画布上绘制文本填充效果（应用眼距调整）
+    const offsetX = sourceX;
+    const offsetY = sourceY;
+
+    drawEyeWithTextScaled(textCtx, landmarks, LEFT_EYE_INDICES, LEFT_IRIS_INDICES,
+        canvas.width, canvas.height, effectiveScale, offsetX, offsetY, gapAdjustment);
+
+    drawEyeWithTextScaled(textCtx, landmarks, RIGHT_EYE_INDICES, RIGHT_IRIS_INDICES,
+        canvas.width, canvas.height, effectiveScale, offsetX, offsetY, -gapAdjustment);
 }
 
 // 在缩放的画布上绘制眼睛文本填充
