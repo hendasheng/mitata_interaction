@@ -17,7 +17,7 @@ let textCanvas, textCtx;
 let faceMesh;
 let isRunning = false;
 let animationId;
-let pane;
+let pane, startBtn;
 
 // 配置参数
 let params = {
@@ -26,7 +26,7 @@ let params = {
     textColor: '#ffffff',
     scale: 10.0,
     maskSize: 1.0,
-    start: () => toggleCapture()
+    eyeGap: 0
 };
 
 // 平滑处理的历史数据
@@ -50,36 +50,43 @@ async function init() {
         title: 'Controls'
     });
 
-    pane.addBinding(params, 'fillText', {
+    pane.addInput(params, 'fillText', {
         label: '填充文本'
     });
 
-    pane.addBinding(params, 'fontSize', {
+    pane.addInput(params, 'fontSize', {
         label: '字体大小',
         min: 1,
         max: 20,
         step: 1
     });
 
-    pane.addBinding(params, 'textColor', {
+    pane.addInput(params, 'textColor', {
         label: '文本颜色'
     });
 
-    pane.addBinding(params, 'scale', {
+    pane.addInput(params, 'scale', {
         label: '放大倍数',
         min: 1,
-        max: 10,
+        max: 20,
         step: 0.1
     });
 
-    pane.addBinding(params, 'maskSize', {
+    pane.addInput(params, 'maskSize', {
         label: '瞳孔遮罩',
         min: 0,
         max: 2,
         step: 0.1
     });
 
-    pane.addButton({
+    pane.addInput(params, 'eyeGap', {
+        label: '眼睛间距',
+        min: -200,
+        max: 0,
+        step: 1
+    });
+
+    startBtn = pane.addButton({
         title: '开始捕捉'
     }).on('click', () => {
         toggleCapture();
@@ -125,8 +132,6 @@ async function initFaceMesh() {
 
 // 开始/停止捕捉
 async function toggleCapture() {
-    const btn = document.getElementById('startBtn');
-
     if (!isRunning) {
         try {
             updateStatus('正在启动摄像头...', 'loading');
@@ -138,15 +143,13 @@ async function toggleCapture() {
             video.srcObject = stream;
             await video.play();
 
-            // 设置 canvas 尺寸
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
 
             isRunning = true;
-            btn.textContent = '停止捕捉';
+            startBtn.title = '停止捕捉';
             updateStatus('正在捕捉...', 'ready');
 
-            // 开始处理视频帧
             processFrame();
         } catch (error) {
             console.error('摄像头启动失败:', error);
@@ -154,7 +157,7 @@ async function toggleCapture() {
         }
     } else {
         stopCapture();
-        btn.textContent = '开始捕捉';
+        startBtn.title = '开始捕捉';
         updateStatus('已停止', 'ready');
     }
 }
@@ -342,7 +345,7 @@ function isInIrisRegion(x, y, irisPoints) {
     }));
 
     // 应用遮罩大小调整
-    const adjustedRadius = radius * params\.maskSize;
+    const adjustedRadius = radius * params.maskSize;
 
     // 检查点是否在圆内
     const dx = x - centerX;
@@ -354,15 +357,38 @@ function isInIrisRegion(x, y, irisPoints) {
 
 // 绘制放大的眼睛区域（只有文本，黑色背景）
 function drawEnlargedEyeRegion(image, landmarks) {
-    // 获取两只眼睛的所有关键点
-    const allEyeIndices = [...LEFT_EYE_INDICES, ...RIGHT_EYE_INDICES];
-    const allEyePoints = allEyeIndices.map(idx => ({
+    // 分别获取左右眼的关键点
+    const leftEyePoints = LEFT_EYE_INDICES.map(idx => ({
         x: landmarks[idx].x * canvas.width,
         y: landmarks[idx].y * canvas.height
     }));
 
-    // 计算眼睛区域的边界
-    const eyeRegionBounds = getBounds(allEyePoints);
+    const rightEyePoints = RIGHT_EYE_INDICES.map(idx => ({
+        x: landmarks[idx].x * canvas.width,
+        y: landmarks[idx].y * canvas.height
+    }));
+
+    // 计算左右眼的边界
+    const leftEyeBounds = getBounds(leftEyePoints);
+    const rightEyeBounds = getBounds(rightEyePoints);
+
+    // 计算两眼中心点
+    const leftEyeCenterX = (leftEyeBounds.minX + leftEyeBounds.maxX) / 2;
+    const rightEyeCenterX = (rightEyeBounds.minX + rightEyeBounds.maxX) / 2;
+
+    // 应用眼距调整（负值拉近）
+    const gapAdjustment = params.eyeGap / 2;
+
+    // 计算整体区域边界（应用眼距调整）
+    const adjustedLeftMaxX = leftEyeBounds.maxX + gapAdjustment;
+    const adjustedRightMinX = rightEyeBounds.minX - gapAdjustment;
+
+    const eyeRegionBounds = {
+        minX: leftEyeBounds.minX,
+        maxX: rightEyeBounds.maxX,
+        minY: Math.min(leftEyeBounds.minY, rightEyeBounds.minY),
+        maxY: Math.max(leftEyeBounds.maxY, rightEyeBounds.maxY)
+    };
 
     // 添加边距
     const padding = 30;
@@ -372,8 +398,8 @@ function drawEnlargedEyeRegion(image, landmarks) {
     const sourceHeight = Math.min(canvas.height - sourceY, eyeRegionBounds.maxY - eyeRegionBounds.minY + padding * 2);
 
     // 计算放大后的尺寸
-    const scaledWidth = sourceWidth * params\.scale;
-    const scaledHeight = sourceHeight * params\.scale;
+    const scaledWidth = sourceWidth * params.scale;
+    const scaledHeight = sourceHeight * params.scale;
 
     // 设置 textCanvas 的尺寸
     textCanvas.width = scaledWidth;
@@ -383,33 +409,33 @@ function drawEnlargedEyeRegion(image, landmarks) {
     textCtx.fillStyle = '#000';
     textCtx.fillRect(0, 0, scaledWidth, scaledHeight);
 
-    // 在放大的画布上绘制文本填充效果（不绘制视频背景）
-    const scaleRatio = params\.scale;
+    // 在放大的画布上绘制文本填充效果（应用眼距调整）
+    const scaleRatio = params.scale;
     const offsetX = sourceX;
     const offsetY = sourceY;
 
     drawEyeWithTextScaled(textCtx, landmarks, LEFT_EYE_INDICES, LEFT_IRIS_INDICES,
-        canvas.width, canvas.height, scaleRatio, offsetX, offsetY);
+        canvas.width, canvas.height, scaleRatio, offsetX, offsetY, gapAdjustment);
 
     drawEyeWithTextScaled(textCtx, landmarks, RIGHT_EYE_INDICES, RIGHT_IRIS_INDICES,
-        canvas.width, canvas.height, scaleRatio, offsetX, offsetY);
+        canvas.width, canvas.height, scaleRatio, offsetX, offsetY, -gapAdjustment);
 }
 
 // 在缩放的画布上绘制眼睛文本填充
 function drawEyeWithTextScaled(context, landmarks, eyeIndices, irisIndices,
-    originalWidth, originalHeight, scale, offsetX, offsetY) {
+    originalWidth, originalHeight, scale, offsetX, offsetY, gapAdjustment = 0) {
 
-    // 获取眼睛轮廓点（转换到缩放后的坐标系统）
+    // 获取眼睛轮廓点（转换到缩放后的坐标系统，应用眼距调整）
     const eyePoints = eyeIndices.map(idx => ({
-        x: (landmarks[idx].x * originalWidth - offsetX) * scale,
+        x: (landmarks[idx].x * originalWidth + gapAdjustment - offsetX) * scale,
         y: (landmarks[idx].y * originalHeight - offsetY) * scale
     }));
 
-    // 获取虹膜/瞳孔点（转换到缩放后的坐标系统）
+    // 获取虹膜/瞳孔点（转换到缩放后的坐标系统，应用眼距调整）
     const irisPoints = irisIndices.map(idx => {
         if (landmarks[idx]) {
             return {
-                x: (landmarks[idx].x * originalWidth - offsetX) * scale,
+                x: (landmarks[idx].x * originalWidth + gapAdjustment - offsetX) * scale,
                 y: (landmarks[idx].y * originalHeight - offsetY) * scale
             };
         }
@@ -435,11 +461,11 @@ function drawEyeWithTextScaled(context, landmarks, eyeIndices, irisIndices,
     context.clip();
 
     // 填充文本（字体大小也需要缩放）
-    const scaledFontSize = params\.fontSize * scale;
+    const scaledFontSize = params.fontSize * scale;
     context.font = `${scaledFontSize}px Arial`;
-    context.fillStyle = params\.textColor;
+    context.fillStyle = params.textColor;
 
-    const text = params\.fillText || 'mitata';
+    const text = params.fillText || 'mitata';
     const lineHeight = scaledFontSize * 1.2;
 
     // 在眼睛区域内填充文本（按字符）
