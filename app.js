@@ -21,9 +21,9 @@ let animationId;
 // 配置参数
 let config = {
     fillText: 'mitata',
-    fontSize: 8,
+    fontSize: 2,
     textColor: '#ffffff',
-    scale: 2.0,
+    scale: 10.0,
     maskSize: 1.0
 };
 
@@ -66,6 +66,13 @@ async function init() {
     });
 
     document.getElementById('startBtn').addEventListener('click', toggleCapture);
+
+    // F 键全屏切换
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'f' || e.key === 'F') {
+            toggleFullscreen();
+        }
+    });
 
     // 初始化 Face Mesh
     await initFaceMesh();
@@ -444,6 +451,12 @@ function updateStatus(message, type) {
     const statusEl = document.getElementById('status');
     statusEl.textContent = message;
     statusEl.className = `status ${type}`;
+}
+
+// F 键全屏切换
+function toggleFullscreen() {
+    const textDisplay = document.querySelector('.text-display');
+    textDisplay.classList.toggle('fullscreen');
 }
 
 // 页面加载完成后初始化
