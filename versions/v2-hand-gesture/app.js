@@ -110,6 +110,12 @@ async function init() {
         toggleCapture();
     });
 
+    pane.addButton({
+        title: '全屏切换 (F)'
+    }).on('click', () => {
+        toggleFullscreen();
+    });
+
     // F 键全屏切换
     document.addEventListener('keydown', (e) => {
         if (e.key === 'f' || e.key === 'F') {
