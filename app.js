@@ -61,6 +61,7 @@ async function init() {
         title: 'Controls'
     });
 
+    // 文本组
     pane.addInput(params, 'fillText', {
         label: '填充文本'
     });
@@ -76,24 +77,13 @@ async function init() {
         label: '文本颜色'
     });
 
+    pane.addSeparator();
+
+    // 显示控制组
     pane.addInput(params, 'zoom', {
         label: '放大倍数',
         min: 1,
         max: 20,
-        step: 0.1
-    });
-
-    clarityInput = pane.addInput(params, 'clarity', {
-        label: '清晰度',
-        min: 0,
-        max: 1,
-        step: 0.01
-    });
-
-    pane.addInput(params, 'maskSize', {
-        label: '瞳孔遮罩',
-        min: 0,
-        max: 2,
         step: 0.1
     });
 
@@ -104,6 +94,23 @@ async function init() {
         step: 1
     });
 
+    pane.addInput(params, 'maskSize', {
+        label: '瞳孔遮罩',
+        min: 0,
+        max: 2,
+        step: 0.1
+    });
+
+    clarityInput = pane.addInput(params, 'clarity', {
+        label: '清晰度',
+        min: 0,
+        max: 1,
+        step: 0.01
+    });
+
+    pane.addSeparator();
+
+    // 操作按钮组
     startBtn = pane.addButton({
         title: '开始捕捉'
     }).on('click', () => {
