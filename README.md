@@ -57,7 +57,7 @@ npx http-server -p 8000
 ## 文件结构
 
 ```
-mitata_Interaction/
+mitata_interaction/
 ├── index.html          # 主页面
 ├── app.js             # 核心逻辑
 └── README.md          # 项目说明
