@@ -19,23 +19,6 @@
 
 ## 快速开始
 
-### 运行项目
-
-由于浏览器安全限制，需要通过本地服务器运行：
-
-```bash
-# 使用 Python 3
-python3 -m http.server 8000
-
-# 或使用 Python 2
-python -m SimpleHTTPServer 8000
-
-# 或使用 Node.js
-npx http-server -p 8000
-```
-
-然后在浏览器中打开 `http://localhost:8000`
-
 ### 使用说明
 
 1. 点击"开始捕捉"按钮
