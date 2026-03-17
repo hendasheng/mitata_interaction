@@ -102,70 +102,12 @@
         .controls {
             position: absolute;
             bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px 25px;
-            border-radius: 50px;
+            right: 20px;
             z-index: 100;
         }
 
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        label {
-            font-size: 13px;
-            color: #ccc;
-            font-weight: 500;
-        }
-
-        input[type="text"], input[type="number"], select {
-            padding: 6px 10px;
-            border: 1px solid #444;
-            border-radius: 6px;
-            font-size: 13px;
-            background: #222;
-            color: #fff;
-            transition: border-color 0.3s;
-        }
-
-        input[type="range"] {
-            width: 120px;
-            cursor: pointer;
-        }
-
-        input[type="text"]:focus, input[type="number"]:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        button {
-            padding: 8px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        button:active {
-            transform: translateY(0);
+        .tp-dfwv {
+            width: 300px !important;
         }
 
         .status {
@@ -214,36 +156,10 @@
             </div>
         </div>
 
-        <div class="controls">
-            <div class="control-group">
-                <label for="fillText">填充文本</label>
-                <input type="text" id="fillText" value="mitata" placeholder="输入文本">
-            </div>
-
-            <div class="control-group">
-                <label for="fontSize">字体大小</label>
-                <input type="number" id="fontSize" value="2" min="1" max="20">
-            </div>
-
-            <div class="control-group">
-                <label for="textColor">文本颜色</label>
-                <input type="text" id="textColor" value="#ffffff" placeholder="#ffffff">
-            </div>
-
-            <div class="control-group">
-                <label for="scaleSlider">放大倍数: <span id="scaleValue">10.0</span>x</label>
-                <input type="range" id="scaleSlider" min="1" max="10" step="0.1" value="10">
-            </div>
-
-            <div class="control-group">
-                <label for="maskSize">瞳孔遮罩: <span id="maskSizeValue">1.0</span>x</label>
-                <input type="range" id="maskSize" min="0" max="2" step="0.1" value="1">
-            </div>
-
-            <button id="startBtn">开始捕捉</button>
-        </div>
+        <div id="controls" class="controls"></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/tweakpane@4.0.3/dist/tweakpane.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>

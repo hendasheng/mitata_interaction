@@ -17,14 +17,16 @@ let textCanvas, textCtx;
 let faceMesh;
 let isRunning = false;
 let animationId;
+let pane;
 
 // 配置参数
-let config = {
+let params = {
     fillText: 'mitata',
     fontSize: 2,
     textColor: '#ffffff',
     scale: 10.0,
-    maskSize: 1.0
+    maskSize: 1.0,
+    start: () => toggleCapture()
 };
 
 // 平滑处理的历史数据
@@ -42,30 +44,46 @@ async function init() {
     textCanvas = document.getElementById('textCanvas');
     textCtx = textCanvas.getContext('2d');
 
-    // 绑定控件事件
-    document.getElementById('fillText').addEventListener('input', (e) => {
-        config.fillText = e.target.value;
+    // 初始化 Tweakpane
+    pane = new Tweakpane.Pane({
+        container: document.getElementById('controls'),
+        title: 'Controls'
     });
 
-    document.getElementById('fontSize').addEventListener('input', (e) => {
-        config.fontSize = parseInt(e.target.value);
+    pane.addBinding(params, 'fillText', {
+        label: '填充文本'
     });
 
-    document.getElementById('textColor').addEventListener('input', (e) => {
-        config.textColor = e.target.value;
+    pane.addBinding(params, 'fontSize', {
+        label: '字体大小',
+        min: 1,
+        max: 20,
+        step: 1
     });
 
-    document.getElementById('scaleSlider').addEventListener('input', (e) => {
-        config.scale = parseFloat(e.target.value);
-        document.getElementById('scaleValue').textContent = config.scale.toFixed(1);
+    pane.addBinding(params, 'textColor', {
+        label: '文本颜色'
     });
 
-    document.getElementById('maskSize').addEventListener('input', (e) => {
-        config.maskSize = parseFloat(e.target.value);
-        document.getElementById('maskSizeValue').textContent = config.maskSize.toFixed(1);
+    pane.addBinding(params, 'scale', {
+        label: '放大倍数',
+        min: 1,
+        max: 10,
+        step: 0.1
     });
 
-    document.getElementById('startBtn').addEventListener('click', toggleCapture);
+    pane.addBinding(params, 'maskSize', {
+        label: '瞳孔遮罩',
+        min: 0,
+        max: 2,
+        step: 0.1
+    });
+
+    pane.addButton({
+        title: '开始捕捉'
+    }).on('click', () => {
+        toggleCapture();
+    });
 
     // F 键全屏切换
     document.addEventListener('keydown', (e) => {
@@ -267,11 +285,11 @@ function drawEyeWithText(context, landmarks, eyeIndices, irisIndices, canvasWidt
     context.clip();
 
     // 填充文本
-    context.font = `${config.fontSize}px Arial`;
-    context.fillStyle = config.textColor;
+    context.font = `${params.fontSize}px Arial`;
+    context.fillStyle = params.textColor;
 
-    const text = config.fillText || 'mitata';
-    const lineHeight = config.fontSize * 1.2;
+    const text = params.fillText || 'mitata';
+    const lineHeight = params.fontSize * 1.2;
 
     // 在眼睛区域内填充文本（按字符）
     for (let y = eyeBounds.minY; y < eyeBounds.maxY; y += lineHeight) {
@@ -324,7 +342,7 @@ function isInIrisRegion(x, y, irisPoints) {
     }));
 
     // 应用遮罩大小调整
-    const adjustedRadius = radius * config.maskSize;
+    const adjustedRadius = radius * params\.maskSize;
 
     // 检查点是否在圆内
     const dx = x - centerX;
@@ -354,8 +372,8 @@ function drawEnlargedEyeRegion(image, landmarks) {
     const sourceHeight = Math.min(canvas.height - sourceY, eyeRegionBounds.maxY - eyeRegionBounds.minY + padding * 2);
 
     // 计算放大后的尺寸
-    const scaledWidth = sourceWidth * config.scale;
-    const scaledHeight = sourceHeight * config.scale;
+    const scaledWidth = sourceWidth * params\.scale;
+    const scaledHeight = sourceHeight * params\.scale;
 
     // 设置 textCanvas 的尺寸
     textCanvas.width = scaledWidth;
@@ -366,7 +384,7 @@ function drawEnlargedEyeRegion(image, landmarks) {
     textCtx.fillRect(0, 0, scaledWidth, scaledHeight);
 
     // 在放大的画布上绘制文本填充效果（不绘制视频背景）
-    const scaleRatio = config.scale;
+    const scaleRatio = params\.scale;
     const offsetX = sourceX;
     const offsetY = sourceY;
 
@@ -417,11 +435,11 @@ function drawEyeWithTextScaled(context, landmarks, eyeIndices, irisIndices,
     context.clip();
 
     // 填充文本（字体大小也需要缩放）
-    const scaledFontSize = config.fontSize * scale;
+    const scaledFontSize = params\.fontSize * scale;
     context.font = `${scaledFontSize}px Arial`;
-    context.fillStyle = config.textColor;
+    context.fillStyle = params\.textColor;
 
-    const text = config.fillText || 'mitata';
+    const text = params\.fillText || 'mitata';
     const lineHeight = scaledFontSize * 1.2;
 
     // 在眼睛区域内填充文本（按字符）
