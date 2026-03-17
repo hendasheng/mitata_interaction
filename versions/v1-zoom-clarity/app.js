@@ -14,20 +14,10 @@ const RIGHT_IRIS_INDICES = [473, 474, 475, 476, 477];
 // 全局变量
 let video, canvas, ctx;
 let textCanvas, textCtx;
-let faceMesh, hands;
+let faceMesh;
 let isRunning = false;
 let animationId;
-let pane, startBtn, clarityInput;
-
-// 手势状态
-let handState = {
-    isOpen: false,       // 手掌张开
-    isFist: false,       // 握拳
-    palmY: null,         // 手掌 Y 位置（归一化）
-    lastPalmY: null,     // 上一帧 Y 位置
-    locked: false,       // 清晰度是否已锁定
-    lockedClarity: 1.0   // 锁定的清晰度值
-};
+let pane, startBtn;
 
 // 配置参数
 let params = {
@@ -83,9 +73,9 @@ async function init() {
         step: 0.1
     });
 
-    clarityInput = pane.addInput(params, 'clarity', {
+    pane.addInput(params, 'clarity', {
         label: '清晰度',
-        min: 0,
+        min: 0.1,
         max: 1,
         step: 0.01
     });
@@ -134,28 +124,12 @@ async function initFaceMesh() {
 
         faceMesh.setOptions({
             maxNumFaces: 1,
-            refineLandmarks: true,
+            refineLandmarks: true, // 启用虹膜检测
             minDetectionConfidence: 0.5,
             minTrackingConfidence: 0.5
         });
 
         faceMesh.onResults(onResults);
-
-        // 初始化 Hands
-        hands = new Hands({
-            locateFile: (file) => {
-                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-            }
-        });
-
-        hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 0,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.5
-        });
-
-        hands.onResults(onHandResults);
 
         updateStatus('模型加载完成，点击"开始捕捉"', 'ready');
     } catch (error) {
@@ -221,80 +195,7 @@ async function processFrame() {
     if (!isRunning) return;
 
     await faceMesh.send({ image: video });
-    await hands.send({ image: video });
     animationId = requestAnimationFrame(processFrame);
-}
-
-// 处理手势结果
-function onHandResults(results) {
-    if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-        handState.isOpen = false;
-        handState.isFist = false;
-        handState.lastPalmY = null;
-        return;
-    }
-
-    const landmarks = results.multiHandLandmarks[0];
-
-    // 安全检查：确保所有需要的关键点都存在
-    if (!landmarks || landmarks.length < 21) {
-        return;
-    }
-
-    // 检测手掌张开/握拳：用四根手指指尖 vs 掌根的距离判断
-    // 指尖：8(食指), 12(中指), 16(无名指), 20(小指)
-    // 对应第二关节：6, 10, 14, 18
-    const fingertips = [8, 12, 16, 20];
-    const knuckles = [6, 10, 14, 18];
-    const wrist = landmarks[0];
-
-    // 检查所有需要的关键点是否存在
-    if (!wrist || !wrist.x || !wrist.y) {
-        return;
-    }
-
-    let extendedCount = 0;
-    for (let i = 0; i < fingertips.length; i++) {
-        const tip = landmarks[fingertips[i]];
-        const knuckle = landmarks[knuckles[i]];
-
-        // 安全检查
-        if (!tip || !knuckle || !tip.x || !tip.y || !knuckle.x || !knuckle.y) {
-            continue;
-        }
-
-        // 指尖比关节离手腕更远 = 手指伸展
-        const tipDist = Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
-        const knuckleDist = Math.hypot(knuckle.x - wrist.x, knuckle.y - wrist.y);
-        if (tipDist > knuckleDist) extendedCount++;
-    }
-
-    const wasOpen = handState.isOpen;
-    handState.isOpen = extendedCount >= 3;
-    handState.isFist = extendedCount <= 1;
-
-    // 握拳时锁定清晰度
-    if (handState.isFist && !handState.locked) {
-        handState.locked = true;
-        handState.lockedClarity = params.clarity;
-    } else if (handState.isOpen) {
-        handState.locked = false;
-    }
-
-    // 手掌张开时，用手腕 Y 坐标控制清晰度
-    const palmY = landmarks[0].y; // 0-1，顶部为0，底部为1
-
-    if (handState.isOpen && !handState.locked) {
-        if (handState.lastPalmY !== null) {
-            const delta = handState.lastPalmY - palmY; // 向上移动为正
-            const newClarity = Math.min(1, Math.max(0, params.clarity + delta * 2));
-            params.clarity = Math.round(newClarity * 100) / 100;
-            clarityInput.refresh();
-        }
-        handState.lastPalmY = palmY;
-    } else {
-        handState.lastPalmY = null;
-    }
 }
 
 // 处理 Face Mesh 结果
@@ -493,10 +394,8 @@ function drawEnlargedEyeRegion(image, landmarks) {
     const displayHeight = baseHeight * params.zoom;
 
     // canvas 分辨率由 clarity 控制，但限制最大尺寸避免浏览器崩溃
-    // clarity 0-1 映射到实际分辨率 0.4-1
-    const mappedClarity = 0.2 + params.clarity * 0.6;
-    let canvasWidth = displayWidth * mappedClarity;
-    let canvasHeight = displayHeight * mappedClarity;
+    let canvasWidth = displayWidth * params.clarity;
+    let canvasHeight = displayHeight * params.clarity;
 
     const MAX_CANVAS_SIZE = 8192;
     if (canvasWidth > MAX_CANVAS_SIZE || canvasHeight > MAX_CANVAS_SIZE) {

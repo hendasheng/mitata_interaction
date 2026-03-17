@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mitata Interaction - 版本选择</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 300;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #888;
+            margin-bottom: 60px;
+        }
+
+        .versions {
+            display: grid;
+            gap: 20px;
+        }
+
+        .version-card {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 32px;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .version-card:hover {
+            border-color: #666;
+            background: #1a1a1a;
+            transform: translateY(-2px);
+        }
+
+        .version-title {
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .version-desc {
+            color: #aaa;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .version-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .feature-tag {
+            background: #222;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #999;
+        }
+
+        .current-tag {
+            background: #1a4d2e;
+            color: #4ade80;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-left: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mitata Interaction</h1>
+        <p class="subtitle">选择一个版本开始体验</p>
+
+        <div class="versions">
+            <a href="index.html" class="version-card">
+                <div class="version-title">
+                    当前开发版
+                    <span class="current-tag">CURRENT</span>
+                </div>
+                <div class="version-desc">
+                    最新的开发版本，包含所有最新功能和改进
+                </div>
+                <div class="version-features">
+                    <span class="feature-tag">实时更新</span>
+                    <span class="feature-tag">手势控制</span>
+                </div>
+            </a>
+
+            <a href="versions/v2-hand-gesture/index.html" class="version-card">
+                <div class="version-title">V2 - 手势控制</div>
+                <div class="version-desc">
+                    添加手势控制清晰度功能，手掌张开上下移动调节清晰度，握拳锁定当前值
+                </div>
+                <div class="version-features">
+                    <span class="feature-tag">手势控制</span>
+                    <span class="feature-tag">放大倍数 1-20x</span>
+                    <span class="feature-tag">清晰度 0-1</span>
+                    <span class="feature-tag">眼睛间距</span>
+                </div>
+            </a>
+
+            <a href="versions/v1-zoom-clarity/index.html" class="version-card">
+                <div class="version-title">V1 - 放大与清晰度</div>
+                <div class="version-desc">
+                    独立的放大倍数和清晰度控制，支持 1-20x 放大，0-1 清晰度调节
+                </div>
+                <div class="version-features">
+                    <span class="feature-tag">放大倍数 1-20x</span>
+                    <span class="feature-tag">清晰度 0-1</span>
+                    <span class="feature-tag">眼睛间距</span>
+                    <span class="feature-tag">重叠叠加</span>
+                </div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
