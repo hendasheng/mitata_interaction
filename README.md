@@ -65,12 +65,6 @@ http-server -p 8000
 ```
 然后访问 `http://localhost:8000`
 
-**方法 4：使用 PHP 内置服务器**
-```bash
-php -S localhost:8000
-```
-然后访问 `http://localhost:8000`
-
 ### 使用说明
 
 1. 通过本地服务器打开 `home.html` 选择版本，或直接打开 `index.html`
