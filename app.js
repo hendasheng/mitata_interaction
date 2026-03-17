@@ -24,7 +24,8 @@ let params = {
     fillText: 'mitata',
     fontSize: 2,
     textColor: '#ffffff',
-    scale: 10.0,
+    zoom: 1.0,
+    clarity: 1.0,
     maskSize: 1.0,
     eyeGap: 0
 };
@@ -65,11 +66,18 @@ async function init() {
         label: '文本颜色'
     });
 
-    pane.addInput(params, 'scale', {
+    pane.addInput(params, 'zoom', {
         label: '放大倍数',
         min: 1,
         max: 20,
         step: 0.1
+    });
+
+    pane.addInput(params, 'clarity', {
+        label: '清晰度',
+        min: 0.1,
+        max: 1,
+        step: 0.01
     });
 
     pane.addInput(params, 'maskSize', {
@@ -357,31 +365,18 @@ function isInIrisRegion(x, y, irisPoints) {
 
 // 绘制放大的眼睛区域（只有文本，黑色背景）
 function drawEnlargedEyeRegion(image, landmarks) {
-    // 分别获取左右眼的关键点
     const leftEyePoints = LEFT_EYE_INDICES.map(idx => ({
         x: landmarks[idx].x * canvas.width,
         y: landmarks[idx].y * canvas.height
     }));
-
     const rightEyePoints = RIGHT_EYE_INDICES.map(idx => ({
         x: landmarks[idx].x * canvas.width,
         y: landmarks[idx].y * canvas.height
     }));
 
-    // 计算左右眼的边界
     const leftEyeBounds = getBounds(leftEyePoints);
     const rightEyeBounds = getBounds(rightEyePoints);
-
-    // 计算两眼中心点
-    const leftEyeCenterX = (leftEyeBounds.minX + leftEyeBounds.maxX) / 2;
-    const rightEyeCenterX = (rightEyeBounds.minX + rightEyeBounds.maxX) / 2;
-
-    // 应用眼距调整（负值拉近，正值拉远）
     const gapAdjustment = -params.eyeGap / 2;
-
-    // 计算整体区域边界（应用眼距调整）
-    const adjustedLeftMaxX = leftEyeBounds.maxX + gapAdjustment;
-    const adjustedRightMinX = rightEyeBounds.minX - gapAdjustment;
 
     const eyeRegionBounds = {
         minX: leftEyeBounds.minX,
@@ -390,39 +385,43 @@ function drawEnlargedEyeRegion(image, landmarks) {
         maxY: Math.max(leftEyeBounds.maxY, rightEyeBounds.maxY)
     };
 
-    // 添加边距
     const padding = 30;
-    const sourceX = Math.max(0, eyeRegionBounds.minX - padding);
-    const sourceY = Math.max(0, eyeRegionBounds.minY - padding);
-    const sourceWidth = Math.min(canvas.width - sourceX, eyeRegionBounds.maxX - eyeRegionBounds.minX + padding * 2);
-    const sourceHeight = Math.min(canvas.height - sourceY, eyeRegionBounds.maxY - eyeRegionBounds.minY + padding * 2);
+    const baseWidth = eyeRegionBounds.maxX - eyeRegionBounds.minX + padding * 2;
+    const baseHeight = eyeRegionBounds.maxY - eyeRegionBounds.minY + padding * 2;
 
-    // 计算放大后的尺寸，限制最大尺寸避免浏览器限制
-    const maxDim = 8192;
-    const rawScaledWidth = sourceWidth * params.scale;
-    const rawScaledHeight = sourceHeight * params.scale;
-    const clampRatio = Math.min(1, maxDim / Math.max(rawScaledWidth, rawScaledHeight));
-    const scaledWidth = rawScaledWidth * clampRatio;
-    const scaledHeight = rawScaledHeight * clampRatio;
-    const effectiveScale = params.scale * clampRatio;
+    // 显示尺寸由 zoom 控制
+    const displayWidth = baseWidth * params.zoom;
+    const displayHeight = baseHeight * params.zoom;
 
-    // 设置 textCanvas 的尺寸
-    textCanvas.width = scaledWidth;
-    textCanvas.height = scaledHeight;
+    // canvas 分辨率由 clarity 控制，但限制最大尺寸避免浏览器崩溃
+    let canvasWidth = displayWidth * params.clarity;
+    let canvasHeight = displayHeight * params.clarity;
 
-    // 黑色背景
+    const MAX_CANVAS_SIZE = 8192;
+    if (canvasWidth > MAX_CANVAS_SIZE || canvasHeight > MAX_CANVAS_SIZE) {
+        const ratio = Math.min(MAX_CANVAS_SIZE / canvasWidth, MAX_CANVAS_SIZE / canvasHeight);
+        canvasWidth *= ratio;
+        canvasHeight *= ratio;
+    }
+
+    textCanvas.width = Math.round(canvasWidth);
+    textCanvas.height = Math.round(canvasHeight);
+    textCanvas.style.width = displayWidth + 'px';
+    textCanvas.style.height = displayHeight + 'px';
+    textCanvas.style.transform = '';
+
     textCtx.fillStyle = '#000';
-    textCtx.fillRect(0, 0, scaledWidth, scaledHeight);
+    textCtx.fillRect(0, 0, textCanvas.width, textCanvas.height);
 
-    // 在放大的画布上绘制文本填充效果（应用眼距调整）
-    const offsetX = sourceX;
-    const offsetY = sourceY;
+    const offsetX = eyeRegionBounds.minX - padding;
+    const offsetY = eyeRegionBounds.minY - padding;
 
+    // scale 参数根据实际 canvas 尺寸计算
+    const actualScale = canvasWidth / baseWidth;
     drawEyeWithTextScaled(textCtx, landmarks, LEFT_EYE_INDICES, LEFT_IRIS_INDICES,
-        canvas.width, canvas.height, effectiveScale, offsetX, offsetY, gapAdjustment);
-
+        canvas.width, canvas.height, actualScale, offsetX, offsetY, gapAdjustment);
     drawEyeWithTextScaled(textCtx, landmarks, RIGHT_EYE_INDICES, RIGHT_IRIS_INDICES,
-        canvas.width, canvas.height, effectiveScale, offsetX, offsetY, -gapAdjustment);
+        canvas.width, canvas.height, actualScale, offsetX, offsetY, -gapAdjustment);
 }
 
 // 在缩放的画布上绘制眼睛文本填充
@@ -449,21 +448,6 @@ function drawEyeWithTextScaled(context, landmarks, eyeIndices, irisIndices,
     // 计算眼睛边界
     const eyeBounds = getBounds(eyePoints);
 
-    // 保存当前状态
-    context.save();
-
-    // 创建眼睛区域的裁剪路径
-    context.beginPath();
-    eyePoints.forEach((point, i) => {
-        if (i === 0) {
-            context.moveTo(point.x, point.y);
-        } else {
-            context.lineTo(point.x, point.y);
-        }
-    });
-    context.closePath();
-    context.clip();
-
     // 填充文本（字体大小也需要缩放）
     const scaledFontSize = params.fontSize * scale;
     context.font = `${scaledFontSize}px Arial`;
@@ -481,8 +465,8 @@ function drawEyeWithTextScaled(context, landmarks, eyeIndices, irisIndices,
             const char = text[charIndex % text.length];
             const charWidth = context.measureText(char).width;
 
-            // 检查是否在瞳孔区域内
-            if (!isInIrisRegion(x, y, irisPoints)) {
+            // 检查是否在眼睛轮廓内且不在瞳孔区域内
+            if (isPointInPolygon(x, y, eyePoints) && !isInIrisRegion(x, y, irisPoints)) {
                 context.fillText(char, x, y);
             }
 
@@ -490,8 +474,20 @@ function drawEyeWithTextScaled(context, landmarks, eyeIndices, irisIndices,
             charIndex++;
         }
     }
+}
 
-    context.restore();
+// 检查点是否在多边形内（射线法）
+function isPointInPolygon(x, y, polygon) {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i].x, yi = polygon[i].y;
+        const xj = polygon[j].x, yj = polygon[j].y;
+
+        const intersect = ((yi > y) !== (yj > y))
+            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
 }
 
 // 更新状态显示
